@@ -1,0 +1,20 @@
+.env
+*.env
+secrets.toml
+.streamlit/secrets.toml
+
+
+# Data files
+*.csv
+Inputs/
+*.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
