@@ -1,0 +1,55 @@
+
+================================================================================
+PORTFOLIO REBALANCING REPORT
+Generated: 2026-01-19 04:51:38
+================================================================================
+
+PORTFOLIO SUMMARY
+--------------------------------------------------------------------------------
+Total Market Value:        $116,090.50
+Total Cost Basis:          $71,310.50
+Unrealized Gain/Loss:      $44,780.01 (+62.80%)
+Number of Holdings:        17
+
+CURRENT ALLOCATION
+--------------------------------------------------------------------------------
+AAPL      Current:  6.85%  Target:  0.00%  Drift:   +inf%
+CHD       Current:  2.45%  Target:  0.00%  Drift:   +inf%
+DIS       Current:  2.54%  Target:  0.00%  Drift:   +inf%
+GE        Current:  4.56%  Target:  0.00%  Drift:   +inf%
+GEHC      Current:  0.35%  Target:  0.00%  Drift:   +inf%
+GEV       Current:  2.35%  Target:  0.00%  Drift:   +inf%
+IOT       Current:  0.75%  Target:  0.00%  Drift:   +inf%
+JNJ       Current:  6.38%  Target:  0.00%  Drift:   +inf%
+MCD       Current:  2.01%  Target:  0.00%  Drift:   +inf%
+NVDA      Current:  0.32%  Target:  0.00%  Drift:   +inf%
+RQI       Current:  2.37%  Target:  0.00%  Drift:   +inf%
+SBUX      Current:  0.98%  Target:  0.00%  Drift:   +inf%
+SYY       Current:  4.26%  Target:  0.00%  Drift:   +inf%
+TSLA      Current:  2.26%  Target:  0.00%  Drift:   +inf%
+VDIGX     Current:  0.56%  Target:  0.00%  Drift:   +inf%
+VFORX     Current: 54.22%  Target: 80.00%  Drift: -32.22%
+VFH       Current:  6.77%  Target: 20.00%  Drift: -66.13%
+
+================================================================================
+
+RECOMMENDED REBALANCING TRADES
+--------------------------------------------------------------------------------
+
+1. BUY $29,926.27 of VFORX
+   Current: 54.22% → Target: 80.00% (Drift: -32.22%)
+   Net Benefit: $29,926.27
+
+2. BUY $15,353.96 of VFH
+   Current: 6.77% → Target: 20.00% (Drift: -66.13%)
+   Net Benefit: $15,353.96
+
+3. SELL $7,950.00 of AAPL
+   Current: 6.85% → Target: 0.00% (Drift: +inf%)
+   Net Benefit: $7,950.00
+
+4. SELL $7,405.14 of JNJ
+   Current: 6.38% → Target: 0.00% (Drift: +inf%)
+   Net Benefit: $7,405.14
+
+================================================================================

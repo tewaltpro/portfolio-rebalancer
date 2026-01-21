@@ -1,0 +1,1 @@
+CLT Data ROTH IRA Portfolio. Analyzed with all tickers, but each ticker allocation percentage mirrors the given CSV (so it reads that no rebalancing is needed). Tax doesn't need to be accounted for due to the fact it's a ROTH IRA.

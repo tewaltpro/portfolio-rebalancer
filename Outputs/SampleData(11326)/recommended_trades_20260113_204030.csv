@@ -1,0 +1,3 @@
+ticker,action,dollar_amount,current_weight,target_weight,drift_pct,tax_impact,net_benefit
+VXUS,SELL,5859.75,0.06741330664296746,0.0,inf,217.404,5642.346
+BND,BUY,5057.0999999999985,0.3418207546355816,0.4,-14.544811341104607,0.0,5057.0999999999985
