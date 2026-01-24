@@ -81,11 +81,85 @@ with st.sidebar:
     # Target allocation (simplified for MVP)
     st.subheader("Target Allocation")
     
+    with st.expander("ℹ️ What is target allocation?"):
+        st.markdown("""
+        **Target allocation** is your ideal portfolio mix - what percentage you want in each investment.
+        
+        **Common strategies:**
+        
+        📊 **Conservative (Low Risk)**
+        - 70-80% Bonds/Stable Funds (VFORX, BND)
+        - 20-30% Stocks (VTI, AAPL)
+        - Good for: Near retirement, low risk tolerance
+        
+        ⚖️ **Moderate (Balanced)**
+        - 50-60% Stocks
+        - 40-50% Bonds
+        - Good for: 10+ years to retirement
+        
+        🚀 **Aggressive (Higher Risk)**
+        - 80-90% Stocks
+        - 10-20% Bonds
+        - Good for: Young investors, 20+ years to retirement
+        
+        **Example:** If you're 25 years old:
+        - VFORX (Target Date Fund): 70%
+        - AAPL (Tech stock): 15%
+        - NVDA (Growth stock): 15%
+        """)
+    
     allocation_text = st.text_area(
         "Enter allocation",
         placeholder="VFORX=70, AAPL=10, NVDA=8, JNJ=7, VFH=5",
         help="Format: TICKER=PERCENT, separated by commas"
     )
+
+    with st.expander("🎯 Help me choose my allocation"):
+        age = st.number_input("Your age", 18, 100, 30)
+        risk_tolerance = st.select_slider(
+            "Risk tolerance",
+            options=["Very Conservative", "Conservative", "Moderate", "Aggressive", "Very Aggressive"]
+        )
+        time_horizon = st.selectbox(
+            "When do you need this money?",
+            ["Less than 5 years", "5-10 years", "10-20 years", "20+ years"]
+        )
+        
+        if st.button("Generate Recommended Allocation"):
+            # Simple algorithm
+            if time_horizon == "Less than 5 years":
+                stock_pct = 30
+            elif time_horizon == "5-10 years":
+                stock_pct = 50
+            elif time_horizon == "10-20 years":
+                stock_pct = 70
+            else:
+                stock_pct = 85
+            
+            # Adjust for risk tolerance
+            if risk_tolerance == "Very Conservative":
+                stock_pct -= 20
+            elif risk_tolerance == "Conservative":
+                stock_pct -= 10
+            elif risk_tolerance == "Aggressive":
+                stock_pct += 10
+            elif risk_tolerance == "Very Aggressive":
+                stock_pct += 15
+            
+            stock_pct = max(20, min(95, stock_pct))  # Keep between 20-95%
+            bond_pct = 100 - stock_pct
+            
+            st.success(f"""
+            **Recommended Allocation:**
+            - Stocks/Growth: {stock_pct}%
+            - Bonds/Stable: {bond_pct}%
+            
+            **Example allocation to enter above:**
+            VFORX={bond_pct}, VTI={stock_pct}
+            
+            Or diversify stocks:
+            VFORX={bond_pct}, AAPL={stock_pct//3}, NVDA={stock_pct//3}, VTI={stock_pct - 2*(stock_pct//3)}
+            """)
     
     # Parse allocation
     target_allocation = {}
@@ -114,6 +188,19 @@ with st.sidebar:
         0.0, 50.0, 0.0,
         help="Enter 0 for Roth IRA, 24 for typical taxable account"
     ) / 100
+
+    st.markdown("---")
+
+    # Advanced settings
+    with st.expander("⚙️ Advanced Settings"):
+        min_trade_size = st.number_input(
+            "Minimum trade size ($)",
+            100, 10000, 1000,
+            step=100,
+            help="Ignore recommendations smaller than this to avoid excessive transaction fees"
+        )
+        # Store in session state
+        st.session_state['min_trade_size'] = min_trade_size
 
 # Main area
 if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
@@ -210,19 +297,76 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
             with tab2:
                 st.subheader("Recommended Rebalancing Trades")
                 
+                # ========== ADD WARNINGS HERE ==========
+                st.warning("""
+                ⚠️ **Before executing these trades, consider:**
+                - **Transaction fees** from your broker ($0-$50 per trade)
+                - **Mutual fund minimums** (e.g., VFORX requires $3,000 minimum purchase)
+                - **Tax consequences** (especially important for taxable accounts)
+                - **Small trades** under $1,000 may not be worth the fees
+                
+                💡 Adjust "Minimum trade size" in Advanced Settings to filter small trades.
+                """)
+                # ========================================
+                
                 if trades:
-                    for i, trade in enumerate(trades, 1):
-                        with st.container():
-                            if trade['action'] == 'SELL':
-                                st.markdown(f"**{i}. 🔴 SELL** ${trade['dollar_amount']:,.0f} of **{trade['ticker']}**")
-                            else:
-                                st.markdown(f"**{i}. 🟢 BUY** ${trade['dollar_amount']:,.0f} of **{trade['ticker']}**")
-                            
-                            if trade.get('trade_type') == 'LIQUIDATE':
-                                st.caption(f"Liquidate entire position (target = 0%)")
-                            else:
-                                st.caption(f"Adjust from {trade['current_weight']*100:.1f}% to {trade['target_weight']*100:.1f}%")
-                            st.markdown("---")
+                    # ========== FILTER TRADES BY MINIMUM SIZE ==========
+                    min_trade_size = st.session_state.get('min_trade_size', 1000)
+                    filtered_trades = [t for t in trades if t['dollar_amount'] >= min_trade_size]
+                    # ===================================================
+                    
+                    if not filtered_trades:
+                        st.info(f"✅ No trades needed above ${min_trade_size:,.0f} threshold. Portfolio is well-balanced!")
+                    else:
+                        st.markdown(f"*Showing {len(filtered_trades)} trade(s) above ${min_trade_size:,.0f} threshold*")
+                        st.markdown("---")
+                        
+                        # ========== MUTUAL FUND DATA ==========
+                        MUTUAL_FUND_MINIMUMS = {
+                            'VFORX': 3000,
+                            'VDIGX': 3000,
+                            'VFIAX': 3000,
+                            'VTSAX': 3000,
+                            'VTIAX': 3000,
+                            'VBTLX': 3000,
+                        }
+                        
+                        FUND_ALTERNATIVES = {
+                            'VFORX': 'VT (Vanguard Total World Stock ETF)',
+                            'VFIAX': 'VOO (Vanguard S&P 500 ETF)',
+                            'VDIGX': 'VIG (Vanguard Dividend Appreciation ETF)',
+                            'VTSAX': 'VTI (Vanguard Total Stock Market ETF)',
+                            'VBTLX': 'BND (Vanguard Total Bond Market ETF)',
+                        }
+                        # =======================================
+                        
+                        # ========== DISPLAY TRADES WITH WARNINGS ==========
+                        for i, trade in enumerate(filtered_trades, 1):
+                            with st.container():
+                                if trade['action'] == 'SELL':
+                                    st.markdown(f"**{i}. 🔴 SELL** ${trade['dollar_amount']:,.0f} of **{trade['ticker']}**")
+                                else:
+                                    st.markdown(f"**{i}. 🟢 BUY** ${trade['dollar_amount']:,.0f} of **{trade['ticker']}**")
+                                
+                                if trade.get('trade_type') == 'LIQUIDATE':
+                                    st.caption(f"Liquidate entire position (target = 0%)")
+                                else:
+                                    st.caption(f"Adjust from {trade['current_weight']*100:.1f}% to {trade['target_weight']*100:.1f}%")
+                                
+                                # Check for mutual fund minimum issues
+                                if trade['action'] == 'BUY' and trade['ticker'] in MUTUAL_FUND_MINIMUMS:
+                                    minimum = MUTUAL_FUND_MINIMUMS[trade['ticker']]
+                                    if trade['dollar_amount'] < minimum:
+                                        st.error(f"⚠️ **{trade['ticker']} requires ${minimum:,} minimum purchase.** Consider buying ${minimum:,} instead or use an ETF alternative: {FUND_ALTERNATIVES.get(trade['ticker'], 'Check with your broker')}")
+                                    else:
+                                        st.info(f"ℹ️ {trade['ticker']} minimum purchase: ${minimum:,} (you're buying ${trade['dollar_amount']:,.0f} ✓)")
+                                
+                                # Warn about small trades
+                                if trade['dollar_amount'] < 500:
+                                    st.caption("⚠️ Very small trade - transaction fees may outweigh the benefit")
+                                
+                                st.markdown("---")
+                        # ==================================================
                 else:
                     st.info("✅ No rebalancing needed. Portfolio is within acceptable thresholds.")
             
@@ -269,3 +413,15 @@ else:
     - Tax-loss harvesting opportunities
     - Downloadable detailed report
     """)
+
+# ========== ADD DISCLAIMER AT BOTTOM ==========
+st.markdown("---")
+st.markdown("""
+<div style='background-color: #fff3cd; padding: 1rem; border-radius: 5px; border-left: 4px solid #ffc107; margin-top: 2rem;'>
+<strong>⚠️ IMPORTANT DISCLAIMER</strong><br>
+This is an educational portfolio analysis tool and is <strong>NOT investment advice</strong>. 
+from a licensed financial advisor. It is your responsibility to do your own research and consult a professional before making any investment decisions.
+Transaction costs, taxes, and other factors may affect actual results.
+</div>
+""", unsafe_allow_html=True)
+# ==============================================
