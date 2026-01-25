@@ -462,6 +462,7 @@ st.markdown("""
             <p style='margin: 0; font-size: 0.95rem;'>
                 📧 <a href='mailto:olivertewalt.pro@gmail.com' style='color: #3498db; text-decoration: none;'>
                 olivertewalt.pro@gmail.com
+                <span style='color: #95a5a6; font-style: italic;'> ← Send Feedback Here!</span>  
                 </a>
             </p>
         </div>
