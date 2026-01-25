@@ -502,7 +502,7 @@ with col2:
             Beta-Testers Use This Tool 
             <span style='color: #3fb950; font-weight: bold;'>FREE</span>
         </h2>
-        <h3 style='color: #8b949e; font-weight: normal; margin-bottom: 2rem;'>
+        <h3 style='color: #30363d; font-weight: normal; margin-bottom: 2rem;'>
             In Exchange for Testimonials & Feedback
         </h3>
     </div>
