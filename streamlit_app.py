@@ -423,7 +423,7 @@ with col2:
     """, unsafe_allow_html=True)
     
     st.markdown("""
-    <div style='text-align: center; font-size: 1.1rem; line-height: 1.8; color: #495057;'>
+    <div style='text-align: center; font-size: 1.1rem; line-height: 1.8; color: #6c757d;'>
         <p style='margin-bottom: 1.5rem;'>
             This is a <strong>student project</strong> designed to help people like you 
             <strong>save money on taxes</strong> and make the most of your investments.
@@ -456,7 +456,7 @@ st.markdown("<br><br>", unsafe_allow_html=True)
 st.markdown("---")
 
 st.markdown("""
-<div style='background-color: ##E0E0E0; padding: 2rem; border-radius: 8px; margin-top: 2rem;'>
+<div style='background-color: #D3D3D3; padding: 2rem; border-radius: 8px; margin-top: 2rem;'>
     <div style='display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;'>
         <div style='color: #ecf0f1;'>
             <p style='margin: 0; font-size: 0.95rem;'>
