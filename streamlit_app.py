@@ -456,7 +456,7 @@ st.markdown("<br><br>", unsafe_allow_html=True)
 st.markdown("---")
 
 st.markdown("""
-<div style='background-color: #2c3e50; padding: 2rem; border-radius: 8px; margin-top: 2rem;'>
+<div style='background-color: #8b949e; padding: 2rem; border-radius: 8px; margin-top: 2rem;'>
     <div style='display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;'>
         <div style='color: #ecf0f1;'>
             <p style='margin: 0; font-size: 0.95rem;'>
