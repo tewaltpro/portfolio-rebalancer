@@ -54,12 +54,105 @@ def convert_csv(uploaded_file):
             pass
         return None
 
-# Page config
+# Page config with dark theme
 st.set_page_config(
     page_title="Smart Portfolio Rebalancer",
     page_icon="📊",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
+
+# Custom CSS for dark mode styling
+st.markdown("""
+<style>
+    /* Main background */
+    .stApp {
+        background-color: #0e1117;
+    }
+    
+    /* Text colors */
+    .stMarkdown, p, li, label {
+        color: #fafafa !important;
+    }
+    
+    /* Headers */
+    h1, h2, h3 {
+        color: #fafafa !important;
+    }
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #262730;
+    }
+    
+    /* Info boxes - make them darker with better contrast */
+    .stAlert {
+        background-color: #1e2130;
+        color: #fafafa;
+    }
+    
+    /* Make success/info messages more visible */
+    .stSuccess {
+        background-color: #0e4429;
+        color: #3fb950;
+    }
+    
+    /* Dataframes */
+    .dataframe {
+        color: #fafafa !important;
+    }
+    
+    /* Buttons */
+    .stButton button {
+        background-color: #238636;
+        color: white;
+        border: none;
+    }
+    
+    .stButton button:hover {
+        background-color: #2ea043;
+    }
+    
+    /* Metrics */
+    [data-testid="stMetricValue"] {
+        color: #fafafa !important;
+    }
+    
+    /* Text inputs */
+    .stTextInput input, .stTextArea textarea {
+        background-color: #1e2130;
+        color: #fafafa;
+        border-color: #30363d;
+    }
+    
+    /* Number inputs */
+    .stNumberInput input {
+        background-color: #1e2130;
+        color: #fafafa;
+        border-color: #30363d;
+    }
+    
+    /* Expanders */
+    .streamlit-expanderHeader {
+        background-color: #1e2130;
+        color: #fafafa !important;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #0e1117;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        color: #8b949e;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        color: #58a6ff !important;
+        border-bottom-color: #58a6ff !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Title
 st.title("📊 Smart Portfolio Rebalancer")
@@ -78,7 +171,7 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Target allocation (simplified for MVP)
+    # Target allocation
     st.subheader("Target Allocation")
     
     with st.expander("ℹ️ What is target allocation?"):
@@ -146,7 +239,7 @@ with st.sidebar:
             elif risk_tolerance == "Very Aggressive":
                 stock_pct += 15
             
-            stock_pct = max(20, min(95, stock_pct))  # Keep between 20-95%
+            stock_pct = max(20, min(95, stock_pct))
             bond_pct = 100 - stock_pct
             
             st.success(f"""
@@ -199,7 +292,6 @@ with st.sidebar:
             step=100,
             help="Ignore recommendations smaller than this to avoid excessive transaction fees"
         )
-        # Store in session state
         st.session_state['min_trade_size'] = min_trade_size
 
 # Main area
@@ -226,7 +318,6 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
             with st.spinner("Fetching current market prices..."):
                 tickers = list(set(h['ticker'] for h in holdings))
                 
-                # Get API key from secrets or env
                 try:
                     api_key = st.secrets["ALPHAVANTAGE_API_KEY"]
                 except:
@@ -236,7 +327,6 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
                     loader_with_key = DataLoader(api_key=api_key)
                     prices = loader_with_key.get_current_prices(tickers, source='alphavantage')
                 else:
-                    # Fallback to Yahoo if no API key
                     prices = loader.get_current_prices(tickers, source='yahoo')
                 
                 if not prices:
@@ -244,10 +334,8 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
                     st.stop()
             
             with st.spinner("Running analysis..."):
-                # Initialize rebalancer
                 rebalancer = PortfolioRebalancer(target_allocation, tax_rate=tax_rate)
                 
-                # Analyze
                 portfolio_df = rebalancer.load_portfolio(holdings)
                 portfolio_df = rebalancer.calculate_current_values(portfolio_df, prices)
                 
@@ -257,7 +345,6 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
                 total_value = portfolio_df['current_value'].sum()
                 trades = rebalancer.generate_rebalancing_trades(allocation_df, portfolio_df, total_value)
             
-            # Display results
             st.success("✅ Analysis Complete!")
             
             # Summary metrics
@@ -276,20 +363,16 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
                 tlh_benefit = sum(opp['tax_benefit'] for opp in tlh_opportunities) if tlh_opportunities else 0
                 st.metric("Tax Savings Available", f"${tlh_benefit:,.0f}")
             
-            # Tabs for different views
+            # Tabs
             tab1, tab2, tab3 = st.tabs(["📊 Allocation", "💡 Recommendations", "📄 Full Report"])
             
             with tab1:
                 st.subheader("Current vs Target Allocation")
                 
-                # Format allocation table
                 display_df = allocation_df[['ticker', 'current_weight', 'target_weight', 'drift_pct']].copy()
                 display_df['current_weight'] = display_df['current_weight'] * 100
                 display_df['target_weight'] = display_df['target_weight'] * 100
-                
-                # Handle infinite drift (when target = 0%)
                 display_df['drift_pct'] = display_df['drift_pct'].replace([float('inf'), float('-inf')], 'N/A')
-                
                 display_df.columns = ['Ticker', 'Current %', 'Target %', 'Drift %']
                 
                 st.dataframe(display_df, use_container_width=True)
@@ -297,7 +380,6 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
             with tab2:
                 st.subheader("Recommended Rebalancing Trades")
                 
-                # ========== ADD WARNINGS HERE ==========
                 st.warning("""
                 ⚠️ **Before executing these trades, consider:**
                 - **Transaction fees** from your broker ($0-$50 per trade)
@@ -307,13 +389,10 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
                 
                 💡 Adjust "Minimum trade size" in Advanced Settings to filter small trades.
                 """)
-                # ========================================
                 
                 if trades:
-                    # ========== FILTER TRADES BY MINIMUM SIZE ==========
                     min_trade_size = st.session_state.get('min_trade_size', 1000)
                     filtered_trades = [t for t in trades if t['dollar_amount'] >= min_trade_size]
-                    # ===================================================
                     
                     if not filtered_trades:
                         st.info(f"✅ No trades needed above ${min_trade_size:,.0f} threshold. Portfolio is well-balanced!")
@@ -321,14 +400,9 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
                         st.markdown(f"*Showing {len(filtered_trades)} trade(s) above ${min_trade_size:,.0f} threshold*")
                         st.markdown("---")
                         
-                        # ========== MUTUAL FUND DATA ==========
                         MUTUAL_FUND_MINIMUMS = {
-                            'VFORX': 3000,
-                            'VDIGX': 3000,
-                            'VFIAX': 3000,
-                            'VTSAX': 3000,
-                            'VTIAX': 3000,
-                            'VBTLX': 3000,
+                            'VFORX': 3000, 'VDIGX': 3000, 'VFIAX': 3000,
+                            'VTSAX': 3000, 'VTIAX': 3000, 'VBTLX': 3000,
                         }
                         
                         FUND_ALTERNATIVES = {
@@ -338,9 +412,7 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
                             'VTSAX': 'VTI (Vanguard Total Stock Market ETF)',
                             'VBTLX': 'BND (Vanguard Total Bond Market ETF)',
                         }
-                        # =======================================
                         
-                        # ========== DISPLAY TRADES WITH WARNINGS ==========
                         for i, trade in enumerate(filtered_trades, 1):
                             with st.container():
                                 if trade['action'] == 'SELL':
@@ -353,30 +425,25 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
                                 else:
                                     st.caption(f"Adjust from {trade['current_weight']*100:.1f}% to {trade['target_weight']*100:.1f}%")
                                 
-                                # Check for mutual fund minimum issues
                                 if trade['action'] == 'BUY' and trade['ticker'] in MUTUAL_FUND_MINIMUMS:
                                     minimum = MUTUAL_FUND_MINIMUMS[trade['ticker']]
                                     if trade['dollar_amount'] < minimum:
-                                        st.error(f"⚠️ **{trade['ticker']} requires ${minimum:,} minimum purchase.** Consider buying ${minimum:,} instead or use an ETF alternative: {FUND_ALTERNATIVES.get(trade['ticker'], 'Check with your broker')}")
+                                        st.error(f"⚠️ **{trade['ticker']} requires ${minimum:,} minimum purchase.** Consider buying ${minimum:,} instead or use {FUND_ALTERNATIVES.get(trade['ticker'], 'an ETF alternative')}")
                                     else:
-                                        st.info(f"ℹ️ {trade['ticker']} minimum purchase: ${minimum:,} (you're buying ${trade['dollar_amount']:,.0f} ✓)")
+                                        st.info(f"ℹ️ {trade['ticker']} minimum: ${minimum:,} (buying ${trade['dollar_amount']:,.0f} ✓)")
                                 
-                                # Warn about small trades
                                 if trade['dollar_amount'] < 500:
-                                    st.caption("⚠️ Very small trade - transaction fees may outweigh the benefit")
+                                    st.caption("⚠️ Very small trade - fees may outweigh benefit")
                                 
                                 st.markdown("---")
-                        # ==================================================
                 else:
                     st.info("✅ No rebalancing needed. Portfolio is within acceptable thresholds.")
             
             with tab3:
-                # Generate full report
                 report = rebalancer.generate_report(portfolio_df, allocation_df, tlh_opportunities, trades)
                 
                 st.text_area("Full Analysis Report", report, height=400)
                 
-                # Download button
                 st.download_button(
                     "📥 Download Report",
                     report,
@@ -392,7 +459,15 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
 
 else:
     # Welcome screen
-    st.info("👈 Upload your portfolio CSV and set your target allocation to get started")
+    st.markdown("""
+    <div style='background-color: #1e2130; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #58a6ff;'>
+        <p style='margin: 0; color: #58a6ff;'>
+            👈 Upload your portfolio CSV and set your target allocation to get started
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
     
     st.markdown("""
     ### How it works:
@@ -414,14 +489,73 @@ else:
     - Downloadable detailed report
     """)
 
-# ========== ADD DISCLAIMER AT BOTTOM ==========
+# Beta section
+st.markdown("<br><br>", unsafe_allow_html=True)
 st.markdown("---")
+
+col1, col2, col3 = st.columns([1, 3, 1])
+
+with col2:
+    st.markdown("""
+    <div style='text-align: center; padding: 2rem 0;'>
+        <h2 style='margin-bottom: 1rem; color: #fafafa;'>
+            Beta-Testers Use This Tool 
+            <span style='color: #3fb950; font-weight: bold;'>FREE</span>
+        </h2>
+        <h3 style='color: #8b949e; font-weight: normal; margin-bottom: 2rem;'>
+            In Exchange for Testimonials & Feedback
+        </h3>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style='text-align: center; font-size: 1.1rem; line-height: 1.8; color: #c9d1d9;'>
+        <p style='margin-bottom: 1.5rem;'>
+            This is a <strong>student project</strong> designed to help people like you 
+            <strong>save money on taxes</strong> and make the most of your investments.
+        </p>
+        <p style='margin-bottom: 1.5rem;'>
+            The rebalancing engine uses the <strong>same algorithms as robo-advisors</strong> 
+            like Wealthfront—and it only gets better each day.
+        </p>
+        <p style='margin-bottom: 2rem;'>
+            Want to see what it recommends for your portfolio? 
+            <strong>Try it above—completely free!</strong>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style='background-color: #21262d; padding: 1.25rem; border-radius: 8px; 
+                border-left: 4px solid #f85149; margin-top: 2rem; color: #c9d1d9; text-align: left;'>
+        <strong style='color: #f85149;'>⚠️ IMPORTANT DISCLAIMER</strong><br>
+        This is an educational portfolio analysis tool and is <strong>NOT investment advice</strong>. 
+        I am not a licensed financial advisor. All investment decisions are your own responsibility.<br><br>
+        Always consult with a licensed financial professional before making investment decisions. 
+        Transaction costs, taxes, and other factors may affect actual results.
+    </div>
+    """, unsafe_allow_html=True)
+
+# Footer
+st.markdown("<br><br>", unsafe_allow_html=True)
+st.markdown("---")
+
 st.markdown("""
-<div style='background-color: #fff3cd; padding: 1rem; border-radius: 5px; border-left: 4px solid #ffc107; margin-top: 2rem; color: #000'>
-<strong>⚠️ IMPORTANT DISCLAIMER</strong><br>
-This is an educational portfolio analysis tool and is <strong>NOT investment advice</strong>. 
-from a licensed financial advisor. It is your responsibility to do your own research and consult a professional before making any investment decisions.
-Transaction costs, taxes, and other factors may affect actual results.
+<div style='background-color: #161b22; padding: 2rem; border-radius: 8px; margin-top: 2rem; border: 1px solid #30363d;'>
+    <div style='display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;'>
+        <div style='color: #c9d1d9;'>
+            <p style='margin: 0; font-size: 0.95rem;'>
+                📧 <a href='mailto:olivertewalt.pro@gmail.com' style='color: #58a6ff; text-decoration: none;'>
+                olivertewalt.pro@gmail.com
+                </a>
+            </p>
+        </div>
+        <div style='color: #8b949e; font-size: 0.85rem;'>
+            <p style='margin: 0;'>Version 1.0 Beta</p>
+        </div>
+    </div>
+    <div style='text-align: center; color: #8b949e; font-size: 0.8rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #21262d;'>
+        <p style='margin: 0;'>© 2026 Portfolio Rebalancer • Educational Tool • Not Investment Advice</p>
+    </div>
 </div>
 """, unsafe_allow_html=True)
-# ==============================================
