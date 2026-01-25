@@ -417,7 +417,7 @@ else:
 # ========== ADD DISCLAIMER AT BOTTOM ==========
 st.markdown("---")
 st.markdown("""
-<div style='background-color: #fff3cd; padding: 1rem; border-radius: 5px; border-left: 4px solid #ffc107; margin-top: 2rem;'>
+<div style='background-color: #fff3cd; padding: 1rem; border-radius: 5px; border-left: 4px solid #ffc107; margin-top: 2rem; color: #000'>
 <strong>⚠️ IMPORTANT DISCLAIMER</strong><br>
 This is an educational portfolio analysis tool and is <strong>NOT investment advice</strong>. 
 from a licensed financial advisor. It is your responsibility to do your own research and consult a professional before making any investment decisions.
