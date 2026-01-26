@@ -54,6 +54,45 @@ def convert_csv(uploaded_file):
             pass
         return None
 
+def calculate_suggested_allocation(age, risk_tolerance, time_horizon):
+    """
+    Calculate suggested asset class allocation based on user profile.
+    Returns percentages only - NOT specific ticker recommendations.
+    """
+    
+    # Base allocation by time horizon
+    if time_horizon == "Less than 5 years":
+        stock_pct = 30
+    elif time_horizon == "5-10 years":
+        stock_pct = 50
+    elif time_horizon == "10-20 years":
+        stock_pct = 65
+    else:  # 20+ years
+        stock_pct = 75
+    
+    # Adjust for risk tolerance
+    if risk_tolerance == "Very Conservative":
+        stock_pct -= 25
+    elif risk_tolerance == "Conservative":
+        stock_pct -= 15
+    elif risk_tolerance == "Aggressive":
+        stock_pct += 10
+    elif risk_tolerance == "Very Aggressive":
+        stock_pct += 15
+    
+    # Age adjustment - reduce stock allocation as you get older
+    if age >= 60:
+        stock_pct -= 15
+    elif age >= 50:
+        stock_pct -= 10
+    elif age <= 30:
+        stock_pct = min(stock_pct + 5, 90)
+    
+    stock_pct = max(20, min(85, stock_pct))
+    bond_pct = 100 - stock_pct
+    
+    return stock_pct, bond_pct
+
 # Page config
 st.set_page_config(
     page_title="Smart Portfolio Rebalancer",
@@ -76,9 +115,16 @@ with st.sidebar:
         help="Download from Schwab, Vanguard, Fidelity, etc."
     )
     
+    # Set session state for CSV upload
+    if uploaded_file:
+        st.session_state.portfolio_csv_uploaded = True
+        st.session_state.uploaded_file = uploaded_file
+    else:
+        st.session_state.portfolio_csv_uploaded = False
+    
     st.markdown("---")
     
-    # Target allocation (simplified for MVP)
+    # Target allocation
     st.subheader("Target Allocation")
     
     with st.expander("ℹ️ What is target allocation?"):
@@ -88,8 +134,8 @@ with st.sidebar:
         **Common strategies:**
         
         📊 **Conservative (Low Risk)**
-        - 70-80% Bonds/Stable Funds (VFORX, BND)
-        - 20-30% Stocks (VTI, AAPL)
+        - 70-80% Bonds/Stable Funds
+        - 20-30% Stocks
         - Good for: Near retirement, low risk tolerance
         
         ⚖️ **Moderate (Balanced)**
@@ -101,11 +147,6 @@ with st.sidebar:
         - 80-90% Stocks
         - 10-20% Bonds
         - Good for: Young investors, 20+ years to retirement
-        
-        **Example:** If you're 25 years old:
-        - VFORX (Target Date Fund): 70%
-        - AAPL (Tech stock): 15%
-        - NVDA (Growth stock): 15%
         """)
     
     allocation_text = st.text_area(
@@ -114,51 +155,47 @@ with st.sidebar:
         help="Format: TICKER=PERCENT, separated by commas"
     )
 
-    with st.expander("🎯 Help me choose my allocation"):
-        age = st.number_input("Your age", 18, 100, 30)
+    # ASSET CLASS ALLOCATION SUGGESTER
+    with st.expander("🎯 What asset class mix should I use?"):
+        st.markdown("Answer a few questions and we'll suggest a general asset class mix for you.")
+        
+        age = st.number_input("Your age", 18, 100, 30, key="age_input")
         risk_tolerance = st.select_slider(
             "Risk tolerance",
-            options=["Very Conservative", "Conservative", "Moderate", "Aggressive", "Very Aggressive"]
+            options=["Very Conservative", "Conservative", "Moderate", "Aggressive", "Very Aggressive"],
+            key="risk_input"
         )
         time_horizon = st.selectbox(
             "When do you need this money?",
-            ["Less than 5 years", "5-10 years", "10-20 years", "20+ years"]
+            ["Less than 5 years", "5-10 years", "10-20 years", "20+ years"],
+            key="time_input"
         )
         
-        if st.button("Generate Recommended Allocation"):
-            # Simple algorithm
-            if time_horizon == "Less than 5 years":
-                stock_pct = 30
-            elif time_horizon == "5-10 years":
-                stock_pct = 50
-            elif time_horizon == "10-20 years":
-                stock_pct = 70
-            else:
-                stock_pct = 85
+        if st.button("Get Suggestion", key="get_suggestion"):
+            stock_pct, bond_pct = calculate_suggested_allocation(age, risk_tolerance, time_horizon)
             
-            # Adjust for risk tolerance
-            if risk_tolerance == "Very Conservative":
-                stock_pct -= 20
-            elif risk_tolerance == "Conservative":
-                stock_pct -= 10
-            elif risk_tolerance == "Aggressive":
-                stock_pct += 10
-            elif risk_tolerance == "Very Aggressive":
-                stock_pct += 15
+            st.success("✅ Suggested Asset Class Mix:")
             
-            stock_pct = max(20, min(95, stock_pct))  # Keep between 20-95%
-            bond_pct = 100 - stock_pct
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Stocks/Growth", f"{stock_pct:.0f}%")
+            with col2:
+                st.metric("Bonds/Stable", f"{bond_pct:.0f}%")
             
-            st.success(f"""
-            **Recommended Allocation:**
-            - Stocks/Growth: {stock_pct}%
-            - Bonds/Stable: {bond_pct}%
+            st.markdown("""
+            ---
+            **How to use this:**
             
-            **Example allocation to enter above:**
-            VFORX={bond_pct}, VTI={stock_pct}
+            1. Choose holdings from your portfolio that fit each category:
+               - **Stocks/Growth**: VTI, VOO, AAPL, NVDA, individual stocks, etc.
+               - **Bonds/Stable**: VFORX, BND, VBTLX, etc.
             
-            Or diversify stocks:
-            VFORX={bond_pct}, AAPL={stock_pct//3}, NVDA={stock_pct//3}, VTI={stock_pct - 2*(stock_pct//3)}
+            2. Enter them in the "Enter allocation" field above with your percentages
+            
+            3. Run the analysis to see your portfolio drift
+            
+            **Need help picking specific holdings?**
+            Consider meeting with a financial advisor who can give personalized advice based on your complete financial picture.
             """)
     
     # Parse allocation
@@ -475,4 +512,4 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
-# ===========================================
+# =========================================
