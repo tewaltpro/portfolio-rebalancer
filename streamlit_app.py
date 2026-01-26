@@ -5,14 +5,11 @@ Client-facing interface for portfolio analysis
 
 import streamlit as st
 import pandas as pd
-from dotenv import load_dotenv
 import os
 import tempfile
 from datetime import datetime
 from data_loader import DataLoader
 from portfolio_rebalancer import PortfolioRebalancer
-
-load_dotenv()  # Load .env file
 
 # Manually include schwab parser logic for now
 def detect_brokerage(filepath):
@@ -241,11 +238,27 @@ with st.sidebar:
         )
         # Store in session state
         st.session_state['min_trade_size'] = min_trade_size
+    
+    # Store current state for change detection
+    current_state = {
+        'file': uploaded_file.name if uploaded_file else None,
+        'allocation': allocation_text,
+        'tax_rate': tax_rate,
+    }
+    
+    # Check if anything changed
+    if 'last_analyzed_state' not in st.session_state:
+        st.session_state.last_analyzed_state = None
+    
+    has_changes = current_state != st.session_state.last_analyzed_state
+    
+    # Disable button if nothing has changed
+    analyze_disabled = not has_changes and st.session_state.last_analyzed_state is not None
 
 # Main area
 if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
     
-    if st.button("🔍 Analyze Portfolio", type="primary", use_container_width=True):
+    if st.button("🔍 Analyze Portfolio", type="primary", use_container_width=True, disabled=analyze_disabled):
         
         try:
             with st.spinner("Converting CSV format..."):
@@ -423,6 +436,9 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
                     mime="text/plain",
                     use_container_width=True
                 )
+                
+                # Mark analysis as completed successfully
+                st.session_state.last_analyzed_state = current_state
         
         except Exception as e:
             st.error(f"❌ Error: {str(e)}")
