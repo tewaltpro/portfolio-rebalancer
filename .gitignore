@@ -2,7 +2,10 @@
 *.env
 secrets.toml
 .streamlit/secrets.toml
-
+DO_NOT_PUSH_portfolio-rebalancer-other-materials
+DO_NOT_PUSH_portfolio-rebalancer-other-materials\Alpaca_Tester
+DO_NOT_PUSH_portfolio-rebalancer-other-materials\Inputs
+DO_NOT_PUSH_portfolio-rebalancer-other-materials\Outputs
 
 # Data files
 *.csv
