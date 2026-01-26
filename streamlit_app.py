@@ -5,11 +5,14 @@ Client-facing interface for portfolio analysis
 
 import streamlit as st
 import pandas as pd
+from dotenv import load_dotenv
 import os
 import tempfile
 from datetime import datetime
 from data_loader import DataLoader
 from portfolio_rebalancer import PortfolioRebalancer
+
+load_dotenv()  # Load .env file
 
 # Manually include schwab parser logic for now
 def detect_brokerage(filepath):
@@ -263,21 +266,32 @@ if uploaded_file and target_allocation and abs(total_pct - 100) < 1:
             with st.spinner("Fetching current market prices..."):
                 tickers = list(set(h['ticker'] for h in holdings))
                 
-                # Get API key from secrets or env
-                try:
-                    api_key = st.secrets["ALPHAVANTAGE_API_KEY"]
-                except:
-                    api_key = os.getenv('ALPHAVANTAGE_API_KEY')
+                prices = {}
                 
+                # Get API key from environment
+                api_key = os.getenv('ALPHAVANTAGE_API_KEY')
+                
+                # Try Alpha Vantage first (primary data source)
                 if api_key:
-                    loader_with_key = DataLoader(api_key=api_key)
-                    prices = loader_with_key.get_current_prices(tickers, source='alphavantage')
+                    try:
+                        loader_with_key = DataLoader(api_key=api_key)
+                        prices = loader_with_key.get_current_prices(tickers, source='alphavantage')
+                    except Exception as e:
+                        st.warning(f"⚠️ Error fetching from Alpha Vantage: {str(e)}")
                 else:
-                    # Fallback to Yahoo if no API key
-                    prices = loader.get_current_prices(tickers, source='yahoo')
+                    st.warning("⚠️ ALPHAVANTAGE_API_KEY not found in environment variables")
                 
+                # If Alpha Vantage fails, try Yahoo Finance as fallback
                 if not prices:
-                    st.error("❌ Could not fetch prices")
+                    try:
+                        st.info("Falling back to Yahoo Finance...")
+                        prices = loader.get_current_prices(tickers, source='yahoo')
+                    except Exception as e:
+                        st.warning(f"⚠️ Could not fetch from Yahoo Finance: {str(e)}")
+                
+                # Final check
+                if not prices:
+                    st.error("❌ Could not fetch prices from any source. Check your Alpha Vantage API key or ensure yfinance is installed.")
                     st.stop()
             
             with st.spinner("Running analysis..."):
