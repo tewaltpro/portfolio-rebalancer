@@ -1,1 +1,0 @@
-CLT Data portfolio analyzed with sample program inputs. Highly inaccurate, simply a test of the program.
